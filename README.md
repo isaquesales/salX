@@ -1,4 +1,4 @@
-#salX
+# salX
 - A mathematical programming language
 
 # TODO:
