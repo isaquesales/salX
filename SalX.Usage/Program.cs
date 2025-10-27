@@ -9,13 +9,18 @@ class Program
         #if DEBUG
         NumberDemo.RunDemo();
         #endif
+        bool onlyFinal = false;
         
-        if (args.Length < 1)
+        if (args.Length > 0)
         {
-            Console.WriteLine("0.0.1");
-            return;
+            onlyFinal = args[0] == "f";
+            if (args[0] == "v")
+            {
+                Console.WriteLine("0.0.1");
+                return;
+            }
         }
-        bool onlyFinal = args[0] == "f";
+        
 
         while (true)
         {
