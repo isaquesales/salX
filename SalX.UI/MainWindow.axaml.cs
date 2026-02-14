@@ -1,5 +1,5 @@
 using Avalonia.Controls;
-using Avalonia.Input;
+using Avalonia.Threading;
 using SalX;
 using SalX.Numbers;
 using System;
@@ -7,20 +7,32 @@ namespace SalX.UI.Views;
 
 public partial class MainWindow : Window
 {
+    private readonly DispatcherTimer _debounce;
+
     public MainWindow()
     {
         InitializeComponent();
 
-        SolveButton.Click += (_, _) => Solve();
-
-        InputBox.KeyDown += (_, e) =>
+        _debounce = new DispatcherTimer
         {
-            if (e.Key == Key.Enter)
-            {
-                Solve();
-                e.Handled = true;
-            }
+            Interval = TimeSpan.FromMilliseconds(150)
         };
+        _debounce.Tick += (_, _) =>
+        {
+            _debounce.Stop();
+            Solve();
+        };
+
+        InputBox.TextChanged += (_, _) => RestartDebounce();
+        OnlyFinalCheck.IsCheckedChanged += (_, _) => RestartDebounce();
+
+        RestartDebounce();
+    }
+
+    private void RestartDebounce()
+    {
+        _debounce.Stop();
+        _debounce.Start();
     }
 
     private void Solve()
@@ -28,8 +40,12 @@ public partial class MainWindow : Window
         try
         {
             var expr = InputBox.Text;
+
             if (string.IsNullOrWhiteSpace(expr))
+            {
+                OutputBox.Text = "";
                 return;
+            }
 
             var number = Number.Parse(expr);
 

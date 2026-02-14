@@ -11,12 +11,9 @@
              Watermark="Type an expression..."
              FontSize="16"/>
 
-    <StackPanel Orientation="Horizontal" Spacing="12">
-      <CheckBox Name="OnlyFinalCheck" Content="Only shows final result"/>
-      <Button Name="SolveButton" Content="Resolver" Width="120" Height="34"/>
-    </StackPanel>
+    <CheckBox Name="OnlyFinalCheck" Content="Only shows final result"/>
 
-    <ScrollViewer Height="360"
+    <ScrollViewer Height="420"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Auto">
       <TextBox Name="OutputBox"
