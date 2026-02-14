@@ -1,0 +1,30 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SalX.UI.Views.MainWindow"
+        Width="700"
+        Height="520"
+        Title="Step by Step Calculator">
+
+  <StackPanel Margin="15" Spacing="10">
+
+    <TextBox Name="InputBox"
+             Watermark="Type an expression..."
+             FontSize="16"/>
+
+    <StackPanel Orientation="Horizontal" Spacing="12">
+      <CheckBox Name="OnlyFinalCheck" Content="Only shows final result"/>
+      <Button Name="SolveButton" Content="Resolver" Width="120" Height="34"/>
+    </StackPanel>
+
+    <ScrollViewer Height="360"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Auto">
+      <TextBox Name="OutputBox"
+               AcceptsReturn="True"
+               IsReadOnly="True"
+               TextWrapping="NoWrap"
+               FontFamily="Consolas"/>
+    </ScrollViewer>
+
+  </StackPanel>
+</Window>
