@@ -12,9 +12,20 @@ public static class Engine
     /// <returns></returns>
     public static string DoString(Number root)
     {
-        root.SimplifyAllFull();
-        var nFinal = root.EvaluateRoot();
-        return nFinal.GetString();
+        bool changed;
+        do
+        {
+            changed = false;
+            root.SimplifyAllFull();
+            var evaluated = root.EvaluateRoot();
+            if (!ReferenceEquals(evaluated, root))
+            {
+                root = evaluated;
+                changed = true;
+            }
+        } while (changed);
+
+        return root.GetString();
     }
 
     /// <summary>
@@ -26,7 +37,8 @@ public static class Engine
     public static Number StepwiseSimplifyAndPrint(Number root, string? label = null)
     {
         if (label != null) Console.WriteLine(label);
-        Console.WriteLine("Initial: " + root.GetString());
+        var lastPrinted = root.GetString();
+        Console.WriteLine("Initial: " + lastPrinted);
 
         bool anyChange;
         do
@@ -35,14 +47,24 @@ public static class Engine
 
             while (root.AdvanceOneStep())
             {
-                Console.WriteLine("Step: " + root.GetString());
+                var stepText = root.GetString();
+                if (stepText != lastPrinted)
+                {
+                    Console.WriteLine("Step: " + stepText);
+                    lastPrinted = stepText;
+                }
                 anyChange = true;
             }
 
             var evaluated = root.EvaluateRoot();
             if (!ReferenceEquals(evaluated, root))
             {
-                Console.WriteLine("Step: " + evaluated.GetString());
+                var evalText = evaluated.GetString();
+                if (evalText != lastPrinted)
+                {
+                    Console.WriteLine("Step: " + evalText);
+                    lastPrinted = evalText;
+                }
                 root = evaluated;
                 anyChange = true;
             }
@@ -53,11 +75,18 @@ public static class Engine
         var finalEval = root.EvaluateRoot();
         if (!ReferenceEquals(finalEval, root))
         {
-            Console.WriteLine("Step: " + finalEval.GetString());
+            var evalText = finalEval.GetString();
+            if (evalText != lastPrinted)
+            {
+                Console.WriteLine("Step: " + evalText);
+                lastPrinted = evalText;
+            }
             root = finalEval;
         }
 
-        Console.WriteLine("Full Simplified: " + root.GetString());
+        var finalText = root.GetString();
+        if (finalText != lastPrinted)
+            Console.WriteLine("Full Simplified: " + finalText);
         return root;
     }
 
@@ -95,11 +124,15 @@ public static class Engine
         var finalEval = root.EvaluateRoot();
         if (!object.ReferenceEquals(finalEval, root))
         {
-            steps.Add(finalEval.GetString());
+            var evalText = finalEval.GetString();
+            if (steps.Count == 0 || steps[^1] != evalText)
+                steps.Add(evalText);
             root = finalEval;
         }
 
-        steps.Add("Full Simplified: " + root.GetString());
+        var finalText = root.GetString();
+        if (steps.Count == 0 || steps[^1] != finalText)
+            steps.Add("Full Simplified: " + finalText);
         return steps;
     }
 }

@@ -129,6 +129,13 @@ public sealed class MethodCallNumber : Number
                 return;
             }
 
+            if (Parent is LabeledValueNumber lv && lv.Value == this)
+            {
+                lv.SetValue(r);
+                r.Parent = lv;
+                return;
+            }
+
             RecordStep();
         }
     }

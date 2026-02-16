@@ -37,4 +37,47 @@ public sealed class LabeledValueNumber : Number
 
     public override Number CloneShallow()
         => new LabeledValueNumber(Label, Value.CloneForSubstitution());
+
+    public void SetValue(Number value)
+    {
+        Value = value;
+        Value.Parent = this;
+    }
+
+    public override bool AdvanceOneStep()
+    {
+        if (Value.AdvanceOneStep())
+        {
+            RecordStep();
+            return true;
+        }
+
+        var evaluated = Value.EvaluateRoot();
+        if (!ReferenceEquals(evaluated, Value))
+        {
+            SetValue(evaluated);
+            RecordStep();
+            return true;
+        }
+
+        return false;
+    }
+
+    public override void SimplifyAllFull()
+    {
+        bool changed;
+        do
+        {
+            changed = false;
+            Value.SimplifyAllFull();
+            var evaluated = Value.EvaluateRoot();
+            if (!ReferenceEquals(evaluated, Value))
+            {
+                SetValue(evaluated);
+                changed = true;
+            }
+        } while (changed);
+
+        RecordStep();
+    }
 }

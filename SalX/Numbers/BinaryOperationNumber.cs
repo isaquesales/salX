@@ -205,8 +205,13 @@ public sealed class BinaryOperationNumber : Number
                             pm.Arguments[j] = r;
                             r.Parent = pm;
                             break;
-                        }
+                    }
                 }
+            }
+            else if (Parent is LabeledValueNumber lv && lv.Value == this)
+            {
+                lv.SetValue(r);
+                r.Parent = lv;
             }
             else
                 RecordStep();

@@ -392,6 +392,13 @@ public sealed class FunctionCallNumber : Number
                 }
             }
 
+            if (Parent is LabeledValueNumber lv && lv.Value == this)
+            {
+                lv.SetValue(r);
+                r.Parent = lv;
+                return;
+            }
+
             RecordStep();
         }
     }

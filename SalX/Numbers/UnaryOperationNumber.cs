@@ -70,6 +70,11 @@ public sealed class UnaryOperationNumber : Number
                         }
                 }
             }
+            else if (Parent is LabeledValueNumber lv && lv.Value == this)
+            {
+                lv.SetValue(r);
+                r.Parent = lv;
+            }
             else RecordStep();
         }
     }

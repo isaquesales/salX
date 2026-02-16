@@ -233,8 +233,8 @@ public sealed class SequenceNumber : Number
         {
             var n = ExtractIndexArg(args, argNames, "n");
             ResolveBase(out var a1, out var step, out _);
-            var term = ComputeTerm(n, a1, step);
-            result = new LabeledValueNumber($"a{n}", ToBestNumber(term));
+            var termExpr = BuildTermExpression(n, a1, step);
+            result = new LabeledValueNumber($"a{n}", termExpr);
             return true;
         }
 
@@ -242,8 +242,8 @@ public sealed class SequenceNumber : Number
         {
             var n = ExtractIndexArg(args, argNames, "n");
             ResolveBase(out var a1, out var step, out _);
-            var sum = ComputeSum(n, a1, step);
-            result = new LabeledValueNumber($"S{n}", ToBestNumber(sum));
+            var sumExpr = BuildSumExpression(n, a1, step);
+            result = new LabeledValueNumber($"S{n}", sumExpr);
             return true;
         }
 
@@ -294,8 +294,8 @@ public sealed class SequenceNumber : Number
             if (named.TryGetValue("n", out var nVal))
             {
                 var n = ToPositiveIndex(nVal, "n");
-                var term = ComputeTerm(n, a1, step);
-                result = new LabeledValueNumber($"a{n}", ToBestNumber(term));
+                var termExpr = BuildTermExpression(n, a1, step);
+                result = new LabeledValueNumber($"a{n}", termExpr);
                 return true;
             }
 
@@ -315,8 +315,8 @@ public sealed class SequenceNumber : Number
             if (named.TryGetValue("sum", out var sumNVal) || named.TryGetValue("sn", out sumNVal))
             {
                 var n = ToPositiveIndex(sumNVal, "sum");
-                var sum = ComputeSum(n, a1, step);
-                result = new LabeledValueNumber($"S{n}", ToBestNumber(sum));
+                var sumExpr = BuildSumExpression(n, a1, step);
+                result = new LabeledValueNumber($"S{n}", sumExpr);
                 return true;
             }
 
@@ -596,6 +596,34 @@ public sealed class SequenceNumber : Number
         return a1 * Math.Pow(step, n - 1);
     }
 
+    private Number BuildTermExpression(int n, double a1, double step)
+    {
+        if (n < 1)
+            throw new ArgumentException("n deve ser >= 1.");
+
+        if (n == 1)
+            return ToBestNumber(a1);
+
+        if (SequenceType == SequenceType.Arithmetic)
+        {
+            return new BinaryOperationNumber(
+                BinaryOperator.Add,
+                ToBestNumber(a1),
+                new BinaryOperationNumber(
+                    BinaryOperator.Multiply,
+                    new IntegerNumber(new BigInteger(n - 1)),
+                    ToBestNumber(step)));
+        }
+
+        return new BinaryOperationNumber(
+            BinaryOperator.Multiply,
+            ToBestNumber(a1),
+            new BinaryOperationNumber(
+                BinaryOperator.Power,
+                ToBestNumber(step),
+                new IntegerNumber(new BigInteger(n - 1))));
+    }
+
     private double ComputeSum(int n, double a1, double step)
     {
         if (n < 1)
@@ -607,6 +635,52 @@ public sealed class SequenceNumber : Number
         if (NearlyEquals(step, 1.0))
             return n * a1;
         return a1 * (1.0 - Math.Pow(step, n)) / (1.0 - step);
+    }
+
+    private Number BuildSumExpression(int n, double a1, double step)
+    {
+        if (n < 1)
+            throw new ArgumentException("n deve ser >= 1.");
+
+        var nNum = new IntegerNumber(new BigInteger(n));
+        if (SequenceType == SequenceType.Arithmetic)
+        {
+            return new BinaryOperationNumber(
+                BinaryOperator.Multiply,
+                new BinaryOperationNumber(
+                    BinaryOperator.Divide,
+                    nNum,
+                    new IntegerNumber(new BigInteger(2))),
+                new BinaryOperationNumber(
+                    BinaryOperator.Add,
+                    new BinaryOperationNumber(
+                        BinaryOperator.Multiply,
+                        new IntegerNumber(new BigInteger(2)),
+                        ToBestNumber(a1)),
+                    new BinaryOperationNumber(
+                        BinaryOperator.Multiply,
+                        new IntegerNumber(new BigInteger(n - 1)),
+                        ToBestNumber(step))));
+        }
+
+        if (NearlyEquals(step, 1.0))
+        {
+            return new BinaryOperationNumber(BinaryOperator.Multiply, nNum, ToBestNumber(a1));
+        }
+
+        return new BinaryOperationNumber(
+            BinaryOperator.Multiply,
+            ToBestNumber(a1),
+            new BinaryOperationNumber(
+                BinaryOperator.Divide,
+                new BinaryOperationNumber(
+                    BinaryOperator.Subtract,
+                    new BinaryOperationNumber(BinaryOperator.Power, ToBestNumber(step), nNum),
+                    new IntegerNumber(BigInteger.One)),
+                new BinaryOperationNumber(
+                    BinaryOperator.Subtract,
+                    ToBestNumber(step),
+                    new IntegerNumber(BigInteger.One))));
     }
 
     private BigInteger ComputeIndexOf(double value, double a1, double step)
