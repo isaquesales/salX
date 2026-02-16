@@ -74,7 +74,7 @@ public sealed class SequenceNumber : Number
             throw new ArgumentException("Estrutura de argumentos inválida.");
 
         var sequenceType = IsGeometricName(name) ? SequenceType.Geometric : SequenceType.Arithmetic;
-        var canonicalName = sequenceType == SequenceType.Geometric ? "geo" : "pa";
+        var canonicalName = sequenceType == SequenceType.Geometric ? "geo" : "ap";
         var named = new Dictionary<string, double>(StringComparer.InvariantCultureIgnoreCase);
         var positional = new List<double>();
 
@@ -192,7 +192,7 @@ public sealed class SequenceNumber : Number
             throw new ArgumentException($"Argumento desconhecido para sequência: {key}");
         }
 
-        return new SequenceNumber(sequenceType, canonicalName, first, step, knownTerms);
+        return new SequenceNumber(sequenceType, name, first, step, knownTerms);
     }
 
     public bool TryInvoke(string memberName, IReadOnlyList<Number> args, IReadOnlyList<string?> argNames, out Number result)

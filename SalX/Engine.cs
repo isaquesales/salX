@@ -97,9 +97,14 @@ public static class Engine
     /// <returns></returns>
     public static List<string> CollectSteps(Number root)
     {
-        var steps = new List<string>{
-            root.GetString()
-        };
+        var steps = new List<string>();
+        void AddStepIfChanged(string s)
+        {
+            if (steps.Count == 0 || steps[^1] != s)
+                steps.Add(s);
+        }
+
+        AddStepIfChanged(root.GetString());
 
         bool anyChange;
         do
@@ -107,14 +112,14 @@ public static class Engine
             anyChange = false;
             while (root.AdvanceOneStep())
             {
-                steps.Add(root.GetString());
+                AddStepIfChanged(root.GetString());
                 anyChange = true;
             }
 
             var evaluated = root.EvaluateRoot();
             if (!object.ReferenceEquals(evaluated, root))
             {
-                steps.Add(evaluated.GetString());
+                AddStepIfChanged(evaluated.GetString());
                 root = evaluated;
                 anyChange = true;
             }
@@ -125,14 +130,12 @@ public static class Engine
         if (!object.ReferenceEquals(finalEval, root))
         {
             var evalText = finalEval.GetString();
-            if (steps.Count == 0 || steps[^1] != evalText)
-                steps.Add(evalText);
+            AddStepIfChanged(evalText);
             root = finalEval;
         }
 
         var finalText = root.GetString();
-        if (steps.Count == 0 || steps[^1] != finalText)
-            steps.Add("Full Simplified: " + finalText);
+        AddStepIfChanged("Full Simplified: " + finalText);
         return steps;
     }
 }

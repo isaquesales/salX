@@ -32,8 +32,8 @@ public abstract class Number : IComparable<Number>
     public virtual string GetString()
     {
         if (Steps == null || Steps.Count == 0)
-            return ToExpressionString();
-        return Steps[Math.Clamp(currentStep, 0, Steps.Count - 1)];
+            return NormalizeDisplay(ToExpressionString());
+        return NormalizeDisplay(Steps[Math.Clamp(currentStep, 0, Steps.Count - 1)]);
     }
     
     /// <summary>
@@ -160,4 +160,38 @@ public abstract class Number : IComparable<Number>
 
     public override string ToString()
         => ToExpressionString();
+
+    private static string NormalizeDisplay(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return text;
+
+        var s = text.Trim();
+        while (HasSingleOuterParens(s))
+            s = s[1..^1].Trim();
+        return s;
+    }
+
+    private static bool HasSingleOuterParens(string s)
+    {
+        if (s.Length < 2 || s[0] != '(' || s[^1] != ')')
+            return false;
+
+        int depth = 0;
+        for (int i = 0; i < s.Length; i++)
+        {
+            var ch = s[i];
+            if (ch == '(') depth++;
+            else if (ch == ')') depth--;
+
+            if (depth < 0)
+                return false;
+
+            // If we close the initial '(' before the end, then outer parens do not wrap all text.
+            if (depth == 0 && i < s.Length - 1)
+                return false;
+        }
+
+        return depth == 0;
+    }
 }
