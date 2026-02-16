@@ -13,5 +13,8 @@ internal enum TokenType
     LParen,
     RParen,
     Comma,
+    Dot,
+    Colon,
+    Invalid,
     End
 }

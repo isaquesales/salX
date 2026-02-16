@@ -22,6 +22,7 @@ public abstract class Number : IComparable<Number>
         // If this node can be reduced to a concrete Number, return that concrete number.
         // Check the common node types that implement TryEvaluate.
         if (this is FunctionCallNumber fc && fc.TryEvaluate(out var rf)) return rf;
+        if (this is MethodCallNumber mc && mc.TryEvaluate(out var rm)) return rm;
         if (this is BinaryOperationNumber bn && bn.TryEvaluate(out var rb)) return rb;
         if (this is UnaryOperationNumber un && un.TryEvaluate(out var ru)) return ru;
         // default: nothing to evaluate at root

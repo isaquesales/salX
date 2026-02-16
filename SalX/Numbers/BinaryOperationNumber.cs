@@ -54,11 +54,14 @@ public sealed class BinaryOperationNumber : Number
         result = null!;
         if (!Left.IsConcrete || !Right.IsConcrete) return false;
 
+        var leftBase = Left is LabeledValueNumber ll ? ll.Value : Left;
+        var rightBase = Right is LabeledValueNumber rl ? rl.Value : Right;
+
         // Prefer rational arithmetic for integer/fraction operands
-        if ((Left is IntegerNumber || Left is FractionNumber) && (Right is IntegerNumber || Right is FractionNumber))
+        if ((leftBase is IntegerNumber || leftBase is FractionNumber) && (rightBase is IntegerNumber || rightBase is FractionNumber))
         {
-            var a = ToFraction(Left);
-            var b = ToFraction(Right);
+            var a = ToFraction(leftBase);
+            var b = ToFraction(rightBase);
             switch (Op)
             {
                 case BinaryOperator.Add: return TryReturnFraction(a.Numerator * b.Denominator + b.Numerator * a.Denominator, a.Denominator * b.Denominator, out result);
@@ -88,8 +91,8 @@ public sealed class BinaryOperationNumber : Number
         }
 
         // Fallback to double arithmetic
-        double ld = ToDouble(Left);
-        double rd = ToDouble(Right);
+        double ld = ToDouble(leftBase);
+        double rd = ToDouble(rightBase);
         double rv = Op switch
         {
             BinaryOperator.Add => ld + rd,
@@ -156,6 +159,7 @@ public sealed class BinaryOperationNumber : Number
             IntegerNumber ii => (double)ii.Value,
             FractionNumber f => (double)f.Numerator / (double)f.Denominator,
             ConstantNumber c => ToDouble(c.Value),
+            LabeledValueNumber l => ToDouble(l.Value),
             _ => double.NaN
         };
     }
@@ -186,6 +190,24 @@ public sealed class BinaryOperationNumber : Number
                         r.Parent = pf;
                         break;
                     }
+            else if (Parent is MethodCallNumber pm)
+            {
+                if (pm.Target == this)
+                {
+                    pm.Target = r;
+                    r.Parent = pm;
+                }
+                else
+                {
+                    for (int j = 0; j < pm.Arguments.Count; j++)
+                        if (pm.Arguments[j] == this)
+                        {
+                            pm.Arguments[j] = r;
+                            r.Parent = pm;
+                            break;
+                        }
+                }
+            }
             else
                 RecordStep();
         }

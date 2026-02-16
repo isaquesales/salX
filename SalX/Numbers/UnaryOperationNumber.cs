@@ -25,9 +25,10 @@ public sealed class UnaryOperationNumber : Number
     public bool TryEvaluate(out Number result)
     {
         result = null!; if (!Operand.IsConcrete) return false;
-        if (Operand is IntegerNumber ii && Op == UnaryOperator.Negate) { result = new IntegerNumber(BigInteger.Negate(ii.Value)); return true; }
-        if (Operand is FractionNumber f && Op == UnaryOperator.Negate) { result = new FractionNumber(BigInteger.Negate(f.Numerator), f.Denominator); return true; }
-        double v = BinaryOperationNumber.ToDouble(Operand);
+        var baseOperand = Operand is LabeledValueNumber l ? l.Value : Operand;
+        if (baseOperand is IntegerNumber ii && Op == UnaryOperator.Negate) { result = new IntegerNumber(BigInteger.Negate(ii.Value)); return true; }
+        if (baseOperand is FractionNumber f && Op == UnaryOperator.Negate) { result = new FractionNumber(BigInteger.Negate(f.Numerator), f.Denominator); return true; }
+        double v = BinaryOperationNumber.ToDouble(baseOperand);
         if (Op == UnaryOperator.Negate) { result = new DoubleNumber(-v); return true; }
         return false;
     }
@@ -50,6 +51,24 @@ public sealed class UnaryOperationNumber : Number
                         r.Parent = pf;
                         break;
                     }
+            }
+            else if (Parent is MethodCallNumber pm)
+            {
+                if (pm.Target == this)
+                {
+                    pm.Target = r;
+                    r.Parent = pm;
+                }
+                else
+                {
+                    for (int i = 0; i < pm.Arguments.Count; i++)
+                        if (pm.Arguments[i] == this)
+                        {
+                            pm.Arguments[i] = r;
+                            r.Parent = pm;
+                            break;
+                        }
+                }
             }
             else RecordStep();
         }

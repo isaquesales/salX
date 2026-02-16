@@ -56,7 +56,12 @@ internal class Lexer
             case '(' : i++; return new Token(TokenType.LParen, "(");
             case ')' : i++; return new Token(TokenType.RParen, ")");
             case ',' : i++; return new Token(TokenType.Comma, ",");
-            default: i++; return new Token(TokenType.End, "");
+            case '.' : i++; return new Token(TokenType.Dot, ".");
+            case ':' : i++; return new Token(TokenType.Colon, ":");
+            default:
+                var invalid = Current.ToString();
+                i++;
+                return new Token(TokenType.Invalid, invalid);
         }
     }
 }

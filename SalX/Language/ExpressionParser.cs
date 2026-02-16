@@ -9,17 +9,26 @@ internal class ExpressionParser
 {
     private readonly Lexer lex;
     private Token look;
+    private Token look2;
+
     public ExpressionParser(string text)
     {
         lex = new Lexer(text);
         look = lex.NextToken();
+        look2 = lex.NextToken();
     }
-    
-    private void Next() => look = lex.NextToken();
+
+    private void Next()
+    {
+        look = look2;
+        look2 = lex.NextToken();
+    }
 
     public Number ParseExpression()
     {
         var expr = ParseAddSubtract();
+        if (look.Type == TokenType.Invalid)
+            throw new Exception($"Token inválido: {look.Text}");
         if (look.Type != TokenType.End)
             throw new Exception($"Unexpected token {look.Text}");
         return expr;
@@ -35,6 +44,7 @@ internal class ExpressionParser
             var right = ParseMultiplyDivide();
             left = new BinaryOperationNumber(op == TokenType.Plus ? BinaryOperator.Add : BinaryOperator.Subtract, left, right);
         }
+
         return left;
     }
 
@@ -46,8 +56,13 @@ internal class ExpressionParser
             var tok = look.Type;
             Next();
             var right = ParsePower();
-            left = tok == TokenType.Star ? new BinaryOperationNumber(BinaryOperator.Multiply, left, right) : tok == TokenType.Slash ? new BinaryOperationNumber(BinaryOperator.Divide, left, right) : new BinaryOperationNumber(BinaryOperator.Modulus, left, right);
+            left = tok == TokenType.Star
+                ? new BinaryOperationNumber(BinaryOperator.Multiply, left, right)
+                : tok == TokenType.Slash
+                    ? new BinaryOperationNumber(BinaryOperator.Divide, left, right)
+                    : new BinaryOperationNumber(BinaryOperator.Modulus, left, right);
         }
+
         return left;
     }
 
@@ -60,6 +75,7 @@ internal class ExpressionParser
             var right = ParseUnary();
             return new BinaryOperationNumber(BinaryOperator.Power, left, right);
         }
+
         return left;
     }
 
@@ -71,14 +87,46 @@ internal class ExpressionParser
             var operand = ParseUnary();
             return new UnaryOperationNumber(UnaryOperator.Negate, operand);
         }
-        return ParsePrimary();
+
+        return ParsePostfix();
+    }
+
+    private Number ParsePostfix()
+    {
+        var value = ParsePrimary();
+
+        while (look.Type == TokenType.Dot)
+        {
+            Next();
+            if (look.Type != TokenType.Identifier)
+                throw new Exception("Expected member name after .");
+
+            var memberName = look.Text;
+            Next();
+
+            if (look.Type == TokenType.LParen)
+            {
+                var args = ParseArgumentList();
+                value = new MethodCallNumber(value, memberName, args, isPropertyAccess: false);
+            }
+            else
+            {
+                value = new MethodCallNumber(value, memberName, Array.Empty<FunctionArgument>(), isPropertyAccess: true);
+            }
+        }
+
+        return value;
     }
 
     private Number ParsePrimary()
     {
+        if (look.Type == TokenType.Invalid)
+            throw new Exception($"Token inválido: {look.Text}");
+
         if (look.Type == TokenType.Number)
         {
-            var txt = look.Text; Next();
+            var txt = look.Text;
+            Next();
             if (look.Type == TokenType.Slash)
             {
                 Next();
@@ -94,7 +142,10 @@ internal class ExpressionParser
                     var d2 = decimal.Parse(den, CultureInfo.InvariantCulture);
                     return new DecimalNumber(d1 / d2);
                 }
-                return new FractionNumber(BigInteger.Parse(txt, CultureInfo.InvariantCulture), BigInteger.Parse(den, CultureInfo.InvariantCulture));
+
+                return new FractionNumber(
+                    BigInteger.Parse(txt, CultureInfo.InvariantCulture),
+                    BigInteger.Parse(den, CultureInfo.InvariantCulture));
             }
 
             if (txt.Contains('.') || txt.Contains('e') || txt.Contains('E'))
@@ -104,34 +155,21 @@ internal class ExpressionParser
                 if (double.TryParse(txt, NumberStyles.Float, CultureInfo.InvariantCulture, out var d))
                     return new DoubleNumber(d);
             }
+
             return new IntegerNumber(BigInteger.Parse(txt, CultureInfo.InvariantCulture));
         }
 
         if (look.Type == TokenType.Identifier)
         {
-            var id = look.Text; Next();
+            var id = look.Text;
+            Next();
+
             if (look.Type == TokenType.LParen)
             {
-                Next();
-                var args = new List<Number>();
-                if (look.Type != TokenType.RParen)
-                    while (true)
-                    {
-                        args.Add(ParseAddSubtract());
-                        if (look.Type == TokenType.Comma)
-                        {
-                            Next();
-                            continue;
-                        }
-                        break;
-                    }
-
-                if (look.Type != TokenType.RParen)
-                    throw new Exception("Expected )");
-                
-                Next();
+                var args = ParseArgumentList();
                 return new FunctionCallNumber(id, args);
             }
+
             if (ConstantRegistry.TryGet(id, out var constVal))
                 return new ConstantNumber(id, constVal!.CloneForSubstitution());
             return new VariableNumber(id);
@@ -149,5 +187,48 @@ internal class ExpressionParser
         }
 
         throw new Exception($"Unexpected token {look.Text}");
+    }
+
+    private List<FunctionArgument> ParseArgumentList()
+    {
+        if (look.Type != TokenType.LParen)
+            throw new Exception("Expected (");
+
+        Next(); // (
+        var args = new List<FunctionArgument>();
+        if (look.Type != TokenType.RParen)
+        {
+            while (true)
+            {
+                args.Add(ParseArgument());
+                if (look.Type == TokenType.Comma)
+                {
+                    Next();
+                    continue;
+                }
+
+                break;
+            }
+        }
+
+        if (look.Type != TokenType.RParen)
+            throw new Exception("Expected )");
+
+        Next(); // )
+        return args;
+    }
+
+    private FunctionArgument ParseArgument()
+    {
+        if (look.Type == TokenType.Identifier && look2.Type == TokenType.Colon)
+        {
+            var argName = look.Text;
+            Next(); // identifier
+            Next(); // :
+            var value = ParseAddSubtract();
+            return new FunctionArgument(argName, value);
+        }
+
+        return new FunctionArgument(null, ParseAddSubtract());
     }
 }
