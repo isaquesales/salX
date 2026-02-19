@@ -1,4 +1,4 @@
-# salX
+# Calculadora de passo a passo salhttps://youtu.be/-KqcL-tfWIc?si=fcatTEhYbOKjuP7NX
 - linguagem matemática com parser e avaliação simbólica
 
 # execução
