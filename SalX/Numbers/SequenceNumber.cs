@@ -60,6 +60,7 @@ public sealed class SequenceNumber : Number
     {
         return string.Equals(name, "geo", StringComparison.InvariantCultureIgnoreCase)
             || string.Equals(name, "pg", StringComparison.InvariantCultureIgnoreCase)
+            || string.Equals(name, "gp", StringComparison.InvariantCultureIgnoreCase)
             || string.Equals(name, "pa", StringComparison.InvariantCultureIgnoreCase)
             || string.Equals(name, "ap", StringComparison.InvariantCultureIgnoreCase)
             || string.Equals(name, "arit", StringComparison.InvariantCultureIgnoreCase);
@@ -247,6 +248,20 @@ public sealed class SequenceNumber : Number
             return true;
         }
 
+        if (m == "range")
+        {
+            var (start, end) = ExtractRangeArgs(args, argNames);
+            ResolveBase(out var a1, out var step, out _);
+
+            var sliceTerms = new Dictionary<int, double>();
+            for (int n = start; n <= end; n++)
+                sliceTerms[n] = ComputeTerm(n, a1, step);
+
+            var slice = new SequenceNumber(SequenceType, ConstructorName, a1, step, sliceTerms);
+            result = new LabeledValueNumber($"a{start}..a{end}", slice);
+            return true;
+        }
+
         if (m == "indexof")
         {
             var value = ExtractValueArg(args, argNames, "an");
@@ -366,7 +381,8 @@ public sealed class SequenceNumber : Number
     private static bool IsGeometricName(string name)
     {
         return string.Equals(name, "geo", StringComparison.InvariantCultureIgnoreCase)
-            || string.Equals(name, "pg", StringComparison.InvariantCultureIgnoreCase);
+            || string.Equals(name, "pg", StringComparison.InvariantCultureIgnoreCase)
+            || string.Equals(name, "gp", StringComparison.InvariantCultureIgnoreCase);
     }
 
     private void ResolveBase(out double a1, out double step, out string stepLabel)
@@ -754,6 +770,63 @@ public sealed class SequenceNumber : Number
 
         var nRaw = ToFiniteDouble(args[0]);
         return ToPositiveIndex(nRaw, defaultName);
+    }
+
+    private static (int Start, int End) ExtractRangeArgs(IReadOnlyList<Number> args, IReadOnlyList<string?> argNames)
+    {
+        if (args.Count != 2)
+            throw new ArgumentException("range aceita exatamente dois argumentos: início e fim.");
+
+        int? start = null;
+        int? end = null;
+        int positionalIndex = 0;
+
+        for (int i = 0; i < args.Count; i++)
+        {
+            var raw = ToFiniteDouble(args[i]);
+            var name = argNames[i];
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                if (positionalIndex == 0)
+                    start = ToPositiveIndex(raw, "start");
+                else if (positionalIndex == 1)
+                    end = ToPositiveIndex(raw, "end");
+                else
+                    throw new ArgumentException("range aceita somente dois argumentos.");
+                positionalIndex++;
+                continue;
+            }
+
+            if (string.Equals(name, "start", StringComparison.InvariantCultureIgnoreCase)
+                || string.Equals(name, "from", StringComparison.InvariantCultureIgnoreCase)
+                || string.Equals(name, "i", StringComparison.InvariantCultureIgnoreCase))
+            {
+                if (start.HasValue)
+                    throw new ArgumentException("Argumento duplicado em range: start.");
+                start = ToPositiveIndex(raw, "start");
+                continue;
+            }
+
+            if (string.Equals(name, "end", StringComparison.InvariantCultureIgnoreCase)
+                || string.Equals(name, "to", StringComparison.InvariantCultureIgnoreCase)
+                || string.Equals(name, "j", StringComparison.InvariantCultureIgnoreCase))
+            {
+                if (end.HasValue)
+                    throw new ArgumentException("Argumento duplicado em range: end.");
+                end = ToPositiveIndex(raw, "end");
+                continue;
+            }
+
+            throw new ArgumentException($"Argumento desconhecido em range: {name}");
+        }
+
+        if (!start.HasValue || !end.HasValue)
+            throw new ArgumentException("range exige início e fim.");
+        if (start.Value > end.Value)
+            throw new ArgumentException("range exige start <= end.");
+
+        return (start.Value, end.Value);
     }
 
     private static double ExtractValueArg(IReadOnlyList<Number> args, IReadOnlyList<string?> argNames, string defaultName)
