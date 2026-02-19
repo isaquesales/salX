@@ -1,4 +1,4 @@
-# Calculadora de passo a passo salhttps://youtu.be/-KqcL-tfWIc?si=fcatTEhYbOKjuP7NX
+# Calculadora de passo a passo
 - linguagem matemática com parser e avaliação simbólica
 
 # execução
